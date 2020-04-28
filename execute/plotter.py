@@ -139,8 +139,10 @@ def plot_algorithm(alg_name, epsilon, fig_index, early_dense=False):
     # settings
     plt.grid(True)
     plt.title("Training / Test AUC for $\epsilon={}$".format(epsilon))
-    plt.xlabel('iteration $l$')
-    plt.ylabel('AUC')
+    plt.xlabel('iteration $l$', fontsize=14)
+    plt.ylabel('AUC', fontsize=14)
+    plt.xticks(fontsize=14)
+    plt.yticks(fontsize=14)
 
 
 def plot_all_in_subfigures():

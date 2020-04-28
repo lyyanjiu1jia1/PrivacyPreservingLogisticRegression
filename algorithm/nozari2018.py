@@ -78,6 +78,7 @@ class Nozari2018(PrivacyPreservingLogistic):
         step_size = self._step_size()
         gradient = self._gradient()
         noise_gradient = self._noise_gradient()
+        gradient += noise_gradient
         self.network_state = self.network_state + step_size * gradient
 
         # project
@@ -94,13 +95,13 @@ class Nozari2018(PrivacyPreservingLogistic):
                 return self.concat_noise_grad
             for i in range(self.n):
                 phi = self.phi_array[i]
-                node_grad = [None for _ in range(self.dim)]
+                node_grad = np.zeros((self.dim, 1))
 
                 for j in range(self.dim):
                     try:
                         eta = phi.keywords['eta_array'][j]
                         node_idx = phi.keywords['basis'][j].keywords['i']
-                        node_grad[int(node_idx)] = eta
+                        node_grad[int(node_idx), 0] = eta
                     except:
                         pass
 
@@ -111,7 +112,7 @@ class Nozari2018(PrivacyPreservingLogistic):
                 noise_gradient = self.gradient(self.phi_array[i], node_state)
                 noise_gradient_array.append(noise_gradient)
 
-        concat_noise_grad = noise_gradient_array[0]
+        concat_noise_grad = noise_gradient_array.pop(0)
         for noise_gradient in noise_gradient_array:
             concat_noise_grad = np.concatenate((concat_noise_grad, noise_gradient))
 

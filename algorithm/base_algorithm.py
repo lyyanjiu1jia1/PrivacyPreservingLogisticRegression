@@ -1,3 +1,5 @@
+import copy
+
 import numpy as np
 import pandas as pd
 from sklearn import metrics
@@ -18,8 +20,8 @@ class PrivacyPreservingLogistic(object):
 
         self.partition_size = self.train_data['X'].shape[0] // self.n
 
-        self.init_network_state = init_network_state
-        self.network_state = init_network_state
+        self.init_network_state = copy.deepcopy(init_network_state)
+        self.network_state = copy.deepcopy(init_network_state)
 
         self.step_size_scale = step_size_scale
 
