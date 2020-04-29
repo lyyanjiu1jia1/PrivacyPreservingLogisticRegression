@@ -109,7 +109,7 @@ def plot_algorithm_subplot(subfig, alg_name, epsilon):
     subfig.set_title("$\epsilon={}$".format(epsilon))
 
 
-def plot_algorithm(alg_name, epsilon, fig_index, early_dense=False):
+def plot_algorithm(alg_name, epsilon, fig_index, early_dense=False, compensate_discontinuity=False):
     # load
     train_auc = np.load(file_path_train_auc(alg_name, epsilon))
     test_auc = np.load(file_path_test_auc(alg_name, epsilon))
@@ -128,6 +128,19 @@ def plot_algorithm(alg_name, epsilon, fig_index, early_dense=False):
     else:
         train_auc, train_iter = even_spread_huang(train_auc, iteration)
         test_auc, test_iter = even_spread_huang(test_auc, iteration)
+
+    if compensate_discontinuity:
+        def compensate(array, compensate_num):
+            first_elem = array.pop(0)
+            second_elem = array.pop(0)
+            array = np.linspace(first_elem, second_elem, compensate_num).tolist() + array
+            return array
+
+        compensate_num = 10
+        train_auc = compensate(train_auc, compensate_num)
+        train_iter = compensate(train_iter, compensate_num)
+        test_auc = compensate(test_auc, compensate_num)
+        test_iter = compensate(test_iter, compensate_num)
 
     # plot
     plt.figure(fig_index)
@@ -187,7 +200,7 @@ def plot_all():
         plot_algorithm(ALGORITHMS[1], epsilon_array[i], i)
 
     for i in range(len(epsilon_array)):
-        plot_algorithm(ALGORITHMS[2], epsilon_array[i], i)
+        plot_algorithm(ALGORITHMS[2], epsilon_array[i], i, compensate_discontinuity=True)
 
     # settings
     for i in range(len(epsilon_array)):
@@ -198,7 +211,7 @@ def plot_all():
     # save
     for i in range(len(epsilon_array)):
         plt.figure(i)
-        plt.savefig(r'../figure/auc' + str(np.log10(epsilon_array[i])) + '.png')
+        plt.savefig(r'../figure/auc' + str(np.log10(epsilon_array[i])).replace('.', '-') + '.png')
 
 
 # plot_all_in_subfigures()
