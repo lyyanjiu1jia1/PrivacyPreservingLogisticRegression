@@ -10,7 +10,8 @@ import numpy as np
 
 
 class Nozari2018(PrivacyPreservingLogistic):
-    def __init__(self, train_data, test_data, n, epsilon, l, dim, lamb, init_network_state, step_size_scale, eval_period,
+    def __init__(self, train_data, test_data, n, epsilon, l, dim, lamb, init_network_state, step_size_scale,
+                 eval_period, metric,
                  gamma=2e3, p=0.55):
         super(Nozari2018, self).__init__(n=n,
                                          epsilon=epsilon,
@@ -21,7 +22,10 @@ class Nozari2018(PrivacyPreservingLogistic):
                                          test_data=test_data,
                                          init_network_state=init_network_state,
                                          step_size_scale=step_size_scale,
-                                         eval_period=eval_period)
+                                         eval_period=eval_period,
+                                         metric=metric)
+
+        self.algorithm_name = 'nozari2018'
 
         self.gamma = gamma
         self.p = p

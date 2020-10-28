@@ -6,7 +6,9 @@ from sklearn import metrics
 
 
 class PrivacyPreservingLogistic(object):
-    def __init__(self, n, epsilon, l, dim, lamb, train_data, test_data, init_network_state, step_size_scale, eval_period):
+    def __init__(self, n, epsilon, l, dim, lamb, train_data, test_data,
+                 init_network_state, step_size_scale, eval_period,
+                 metric):
         self.n = n
 
         self.epsilon = epsilon
@@ -32,10 +34,14 @@ class PrivacyPreservingLogistic(object):
 
         self.eval_period = eval_period
 
-        self.train_auc_array = []
-        self.test_auc_array = []
+        self.metric = metric
+
+        self.algorithm_name = None
+
+        self.train_metric_array = []
+        self.test_metric_array = []
         self.iteration_array = []           # iteration at which auc is recorded
-        self._predict_evaluate()
+        self._evaluate()
 
         self.x_transpose_y = [None] * self.n         # X^T * y for nodes
 
@@ -53,14 +59,13 @@ class PrivacyPreservingLogistic(object):
         while self.iteration < self.l:
             self._iterate()
             self.iteration += 1
-            print("iter {}".format(self.iteration))
+            print("{}'s {}-eps iter: {}".format(self.algorithm_name, self.epsilon, self.iteration))
 
             if self.iteration % self.eval_period == 0:
-                self._predict_evaluate()
-                print("train auc = {}".format(self.train_auc_array[-1]))
-                print("test auc = {}".format(self.test_auc_array[-1]))
+                self._evaluate()
 
-        self._output_weight()
+        # self._output_weight()
+        self.save_metric()
 
     def _iterate(self):
         pass
@@ -130,26 +135,84 @@ class PrivacyPreservingLogistic(object):
         average_state /= self.n
         return average_state
 
-    def _predict_evaluate(self):
-        self._predict()
-        self._evaluate()
+    def _evaluate(self):
+        if self.metric == 'auc':
+            self._predict()
+            self._evaluate_auc()
+        elif self.metric == 'acc':
+            self._predict(use_threshold=True)
+            self._evaluate_acc()
+        elif self.metric == 'loss':
+            self._evaluate_loss()
+        else:
+            raise ValueError("invalid type of metric: {}".format(self.metric))
+
+        print("train {} = {}".format(self.metric, self.train_metric_array[-1]))
+        print("test {} = {}".format(self.metric, self.test_metric_array[-1]))
+
         self._record_iteration()
 
-    def _predict(self):
+    def _evaluate_loss(self):
+        """
+
+        :return:
+        """
+        weight = self._average_state()
+
+        train_loss = self.compute_loss(self.train_data['X'], self.train_data['y'], weight)
+        self.train_metric_array.append(train_loss)
+
+        test_loss = self.compute_loss(self.test_data['X'], self.test_data['y'], weight)
+        self.test_metric_array.append(test_loss)
+
+    @staticmethod
+    def compute_loss(X, y, w):
+        logit = X.dot(w)
+
+        loss = 0
+        for i in range(X.shape[0]):
+            loss += np.float(y[i, 0] * logit[i, 0] - np.log(1 + np.exp(logit[i, 0])))
+
+        return -loss
+
+    def _evaluate_acc(self):
+        """
+        Accuracy
+        :return:
+        """
+        train_acc = metrics.accuracy_score(self.train_data['y'], self.train_pred_y)
+        self.train_metric_array.append(train_acc)
+
+        test_acc = metrics.accuracy_score(self.test_data['y'], self.test_pred_y)
+        self.test_metric_array.append(test_acc)
+
+    def _predict(self, use_threshold=False, threshold=0.5):
         weight = self._average_state()
         self.train_pred_y = self.train_data['X'].dot(weight)
         self.test_pred_y = self.test_data['X'].dot(weight)
 
-    def _evaluate(self):
+        if use_threshold:
+            for i in range(self.train_pred_y.shape[0]):
+                if self.train_pred_y[i, 0] >= threshold:
+                    self.train_pred_y[i, 0] = 1
+                else:
+                    self.train_pred_y[i, 0] = 0
+            for i in range(self.test_pred_y.shape[0]):
+                if self.test_pred_y[i, 0] >= threshold:
+                    self.test_pred_y[i, 0] = 1
+                else:
+                    self.test_pred_y[i, 0] = 0
+
+    def _evaluate_auc(self):
         # over training set
         fpr, tpr, thresholds = metrics.roc_curve(self.train_data['y'], self.train_pred_y)
         auc = metrics.auc(fpr, tpr)
-        self.train_auc_array.append(auc)
+        self.train_metric_array.append(auc)
 
         # over testing set
         fpr, tpr, thresholds = metrics.roc_curve(self.test_data['y'], self.test_pred_y)
         auc = metrics.auc(fpr, tpr)
-        self.test_auc_array.append(auc)
+        self.test_metric_array.append(auc)
 
     def _record_iteration(self):
         self.iteration_array.append(self.iteration)
@@ -178,9 +241,10 @@ class PrivacyPreservingLogistic(object):
     def _output_weight(self):
         print("terminal weight = {}".format(self._average_state()))
 
-    def save_auc(self, alg_name):
-        np.save(r'../data/' + alg_name + '-train-auc.npy', self.train_auc_array)
-        np.save(r'../data/' + alg_name + '-test-auc.npy', self.test_auc_array)
+    def save_metric(self):
+        alg_name = self.algorithm_name + str(np.log10(self.epsilon))
+        np.save(r'../data/' + alg_name + '-train-{}.npy'.format(self.metric), self.train_metric_array)
+        np.save(r'../data/' + alg_name + '-test-{}.npy'.format(self.metric), self.test_metric_array)
         np.save(r'../data/' + alg_name + '-iter.npy', self.iteration_array)
 
 

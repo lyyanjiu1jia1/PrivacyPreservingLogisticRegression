@@ -4,7 +4,8 @@ from algorithm.base_algorithm import PrivacyPreservingLogistic
 
 
 class Huang2015(PrivacyPreservingLogistic):
-    def __init__(self, train_data, test_data, n, epsilon, l, dim, lamb, init_network_state, step_size_scale, eval_period,
+    def __init__(self, train_data, test_data, n, epsilon, l, dim, lamb, init_network_state, step_size_scale,
+                 eval_period, metric,
                  c2=1):
         super(Huang2015, self).__init__(n=n,
                                         epsilon=epsilon,
@@ -15,7 +16,10 @@ class Huang2015(PrivacyPreservingLogistic):
                                         test_data=test_data,
                                         init_network_state=init_network_state,
                                         step_size_scale=step_size_scale,
-                                        eval_period=eval_period)
+                                        eval_period=eval_period,
+                                        metric=metric)
+
+        self.algorithm_name = 'huang2015'
 
         self.c2 = c2
 

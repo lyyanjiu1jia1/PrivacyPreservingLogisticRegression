@@ -1,24 +1,29 @@
 import numpy as np
 from matplotlib import pyplot as plt
+from execute.runner import metric
 
 from algorithm import ALGORITHMS
 
 
 partition_num = 40
 dense_before = 300
+x_lim = (0, 3000)
+y_lim = (0.35, 0.9)
 
 linewidth = 1
 markersize = 3.5
 linetype_train = {ALGORITHMS[0]: 'gs', ALGORITHMS[1]: 'rs', ALGORITHMS[2]: 'bs'}
 linetype_test = {ALGORITHMS[0]: 'g^', ALGORITHMS[1]: 'r^', ALGORITHMS[2]: 'b^'}
+# linetype_train = {ALGORITHMS[0]: 'g-', ALGORITHMS[1]: 'r-', ALGORITHMS[2]: 'b-'}
+# linetype_test = {ALGORITHMS[0]: 'g.', ALGORITHMS[1]: 'r.', ALGORITHMS[2]: 'b.'}
 
 
-def file_path_train_auc(alg_name, epsilon):
-    return r'../data/' + alg_name + str(np.log10(epsilon)) + '-train-auc.npy'
+def file_path_train(alg_name, epsilon):
+    return r'../data/' + alg_name + str(np.log10(epsilon)) + '-train-' + metric + '.npy'
 
 
-def file_path_test_auc(alg_name, epsilon):
-    return r'../data/' + alg_name + str(np.log10(epsilon)) + '-test-auc.npy'
+def file_path_test(alg_name, epsilon):
+    return r'../data/' + alg_name + str(np.log10(epsilon)) + '-test-' + metric + '.npy'
 
 
 def file_path_iter(alg_name, epsilon):
@@ -84,24 +89,24 @@ def plot_algorithm_subplot(subfig, alg_name, epsilon):
     :return:
     """
     # load
-    train_auc = np.load(file_path_train_auc(alg_name, epsilon))
-    test_auc = np.load(file_path_test_auc(alg_name, epsilon))
+    train_metric = np.load(file_path_train(alg_name, epsilon))
+    test_metric = np.load(file_path_test(alg_name, epsilon))
     iteration = np.load(file_path_iter(alg_name, epsilon))
 
     # process
     # if alg_name == ALGORITHMS[1]:
-    #     train_auc, train_iter = even_spread_huang(train_auc, iteration)
-    #     test_auc, test_iter = even_spread_huang(test_auc, iteration)
+    #     train_metric, train_iter = even_spread_huang(train_metric, iteration)
+    #     test_metric, test_iter = even_spread_huang(test_metric, iteration)
     # else:
-    #     train_auc, train_iter = even_spread(train_auc, iteration)
-    #     test_auc, test_iter = even_spread(test_auc, iteration)
-    train_auc, train_iter = even_spread_huang(train_auc, iteration)
-    test_auc, test_iter = even_spread_huang(test_auc, iteration)
+    #     train_metric, train_iter = even_spread(train_metric, iteration)
+    #     test_metric, test_iter = even_spread(test_metric, iteration)
+    train_metric, train_iter = even_spread_huang(train_metric, iteration)
+    test_metric, test_iter = even_spread_huang(test_metric, iteration)
 
     # plot
-    subfig.plot(train_iter, train_auc, linetype_train[alg_name], linewidth=linewidth, markersize=markersize,
+    subfig.plot(train_iter, train_metric, linetype_train[alg_name], linewidth=linewidth, markersize=markersize,
                 label=process_alg_name(alg_name) + ' train')
-    subfig.plot(test_iter, test_auc, linetype_test[alg_name], linewidth=linewidth, markersize=markersize,
+    subfig.plot(test_iter, test_metric, linetype_test[alg_name], linewidth=linewidth, markersize=markersize,
                 label=process_alg_name(alg_name) + ' test')
 
     # settings
@@ -111,23 +116,23 @@ def plot_algorithm_subplot(subfig, alg_name, epsilon):
 
 def plot_algorithm(alg_name, epsilon, fig_index, early_dense=False, compensate_discontinuity=False):
     # load
-    train_auc = np.load(file_path_train_auc(alg_name, epsilon))
-    test_auc = np.load(file_path_test_auc(alg_name, epsilon))
+    train_metric = np.load(file_path_train(alg_name, epsilon))
+    test_metric = np.load(file_path_test(alg_name, epsilon))
     iteration = np.load(file_path_iter(alg_name, epsilon))
 
     # process
     # if alg_name == ALGORITHMS[1]:
-    #     train_auc, train_iter = even_spread_huang(train_auc, iteration)
-    #     test_auc, test_iter = even_spread_huang(test_auc, iteration)
+    #     train_metric, train_iter = even_spread_huang(train_metric, iteration)
+    #     test_metric, test_iter = even_spread_huang(test_metric, iteration)
     # else:
-    #     train_auc, train_iter = even_spread(train_auc, iteration)
-    #     test_auc, test_iter = even_spread(test_auc, iteration)
+    #     train_metric, train_iter = even_spread(train_metric, iteration)
+    #     test_metric, test_iter = even_spread(test_metric, iteration)
     if early_dense:
-        train_auc, train_iter = even_spread_huang(train_auc, iteration, dense_before)
-        test_auc, test_iter = even_spread_huang(test_auc, iteration, dense_before)
+        train_metric, train_iter = even_spread_huang(train_metric, iteration, dense_before)
+        test_metric, test_iter = even_spread_huang(test_metric, iteration, dense_before)
     else:
-        train_auc, train_iter = even_spread_huang(train_auc, iteration)
-        test_auc, test_iter = even_spread_huang(test_auc, iteration)
+        train_metric, train_iter = even_spread_huang(train_metric, iteration)
+        test_metric, test_iter = even_spread_huang(test_metric, iteration)
 
     if compensate_discontinuity:
         def compensate(array, compensate_num):
@@ -137,25 +142,34 @@ def plot_algorithm(alg_name, epsilon, fig_index, early_dense=False, compensate_d
             return array
 
         compensate_num = 10
-        train_auc = compensate(train_auc, compensate_num)
+        train_metric = compensate(train_metric, compensate_num)
         train_iter = compensate(train_iter, compensate_num)
-        test_auc = compensate(test_auc, compensate_num)
+        test_metric = compensate(test_metric, compensate_num)
         test_iter = compensate(test_iter, compensate_num)
 
     # plot
     plt.figure(fig_index)
-    plt.plot(train_iter, train_auc, linetype_train[alg_name], linewidth=linewidth, markersize=markersize,
+    plt.plot(train_iter, train_metric, linetype_train[alg_name], linewidth=linewidth, markersize=markersize,
              label=process_alg_name(alg_name) + ' training')
-    plt.plot(test_iter, test_auc, linetype_test[alg_name], linewidth=linewidth, markersize=markersize,
+    plt.plot(test_iter, test_metric, linetype_test[alg_name], linewidth=linewidth, markersize=markersize,
              label=process_alg_name(alg_name) + ' test')
 
     # settings
     plt.grid(True)
-    plt.title("Training / Test AUC for $\epsilon={}$".format(epsilon))
+    plt.title("Training / Test {} for $\epsilon={}$".format(process_metric_name(metric), epsilon))
     plt.xlabel('iteration $l$', fontsize=14)
-    plt.ylabel('AUC', fontsize=14)
+    plt.ylabel(process_metric_name(metric), fontsize=14)
     plt.xticks(fontsize=14)
     plt.yticks(fontsize=14)
+
+
+def process_metric_name(metric_name):
+    if metric_name == 'auc':
+        return metric_name.upper()
+    elif metric_name == 'acc':
+        return 'Accuracy'
+    elif metric_name == 'loss':
+        return 'Loss'
 
 
 def plot_all_in_subfigures():
@@ -177,7 +191,7 @@ def plot_all_in_subfigures():
 
     # settings
     subfigs[1].set_xlabel('iteration $l$')
-    subfigs[0].set_ylabel('Training / Test AUC')
+    subfigs[0].set_ylabel('Training / Test {}'.format(process_metric_name(metric)))
 
     subfigs[2].legend(loc='best')
 
@@ -206,12 +220,13 @@ def plot_all():
     for i in range(len(epsilon_array)):
         plt.figure(i)
         plt.legend(loc='best')
-        plt.xlim((0, 3000))
+        plt.xlim(x_lim)
+        plt.ylim(y_lim)
 
     # save
     for i in range(len(epsilon_array)):
         plt.figure(i)
-        plt.savefig(r'../figure/auc' + str(np.log10(epsilon_array[i])).replace('.', '-') + '.png')
+        plt.savefig(r'../figure/{}'.format(metric) + str(np.log10(epsilon_array[i])).replace('.', '-') + '.png')
 
 
 # plot_all_in_subfigures()
